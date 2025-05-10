@@ -1,0 +1,10 @@
+import uuid
+
+def build_product(prompt):
+    product_id = str(uuid.uuid4())[:8]
+    return {
+        "title": f"Custom Product: {prompt.title()}",
+        "description": f"I’ve created a unique product based on your request: '{prompt}'. You can customize it or sell it.",
+        "link": f"https://yourdomain.com/products/{product_id}",
+        "id": product_id
+    }
