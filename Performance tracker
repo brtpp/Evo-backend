@@ -1,0 +1,44 @@
+import json
+from datetime import datetime
+
+LOG_FILE = "performance_log.json"
+
+def score_output(item_id, clicked=False, converted=False, time_on_page=0):
+    score = 0
+    if clicked:
+        score += 1
+    if converted:
+        score += 3
+    if time_on_page >= 10:
+        score += 1
+
+    log_entry = {
+        "item_id": item_id,
+        "timestamp": datetime.utcnow().isoformat(),
+        "clicked": clicked,
+        "converted": converted,
+        "time_on_page": time_on_page,
+        "score": score
+    }
+
+    try:
+        with open(LOG_FILE, "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = []
+
+    data.append(log_entry)
+
+    with open(LOG_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+# Ensure file exists when this module is imported
+def initialize_log():
+    try:
+        with open(LOG_FILE, "x") as f:
+            json.dump([], f)
+    except FileExistsError:
+        pass
+
+# Run at import
+initialize_log()
