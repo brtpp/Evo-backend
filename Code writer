@@ -1,0 +1,18 @@
+def generate_tool(prompt):
+    return {
+        "description": f"Here's a tool based on your request: {prompt.title()}",
+        "code": f"# This is a starter script for: {prompt}",
+        "referral_link": "https://yourdomain.com/tool"
+    }
+
+def generate_sys_monitor():
+    return {
+        "filename": "syscheck.sh",
+        "code": """#!/bin/bash
+echo "Memory usage:"
+free -h
+echo "Disk usage:"
+df -h
+""",
+        "description": "This is a simple system monitor script that checks memory and disk usage."
+    }
