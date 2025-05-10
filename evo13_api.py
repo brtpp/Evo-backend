@@ -19,6 +19,20 @@ class Prompt(BaseModel):
     tier: str = "free"
     behavior: dict = {}
 
-@app.post("/infer")
+@app.post("/infer")import json
+from fastapi.responses import JSONResponse
+
+@app.get("/metrics")
+async def get_metrics():
+    """
+    Returns the raw performance_log.json so you can review
+    all the click/conversion/time-on-page scores.
+    """
+    try:
+        with open("performance_log.json", "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = []  # no logs yet
+    return JSONResponse(content=data)
 async def infer_route(data: Prompt):
     return process_prompt(data.prompt, data.tier, data.behavior)
