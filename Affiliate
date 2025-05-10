@@ -1,0 +1,15 @@
+import json
+
+with open("affiliate_offers.json", "r") as f:
+    OFFERS = json.load(f)
+
+def match_affiliate_offer(prompt):
+    prompt = prompt.lower()
+    for offer in OFFERS:
+        if any(k in prompt for k in offer.get("keywords", [])):
+            return {
+                "title": offer["title"],
+                "link": offer["url"],
+                "platform": offer.get("platform", "")
+            }
+    return None
