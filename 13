@@ -1,0 +1,255 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from srb_engine import process_prompt
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class Prompt(BaseModel):
+    prompt: str
+    user_id: str = "anon"
+    tier: str = "free"
+    behavior: dict = {}
+
+@app.post("/infer")
+async def infer_route(data: Prompt):
+    return process_prompt(data.prompt, data.tier, data.behavior)
+
+from product_builder import build_product
+from code_writer import generate_tool, generate_sys_monitor
+from affiliate_engine import match_affiliate_offer
+from performance_tracker import score_output
+
+def detect_domain(prompt):
+    domains = {
+        "system": ["kernel", "os", "memory", "firmware"],
+        "infrastructure": ["docker", "kubernetes", "devops"],
+        "security": ["encryption", "firewall", "token"]
+    }
+    for d, keys in domains.items():
+        if any(k in prompt.lower() for k in keys):
+            return d
+    return "general"
+
+def analyze_behavior(data):
+    speed = data.get("avgSpeed", 0)
+    corrections = data.get("backspaceCount", 0)
+    hover = data.get("hoverTime", 0)
+
+    if speed > 180 and hover < 3:
+        return "direct"
+    elif corrections > 5 or hover > 8:
+        return "reassuring"
+    elif speed < 80:
+        return "patient"
+    return "neutral"
+
+def apply_tone_filter(text, tone):
+    if tone == "direct":
+        return text + " Let’s move forward."
+    elif tone == "reassuring":
+        return "No rush. " + text
+    elif tone == "patient":
+        return "Take your time. " + text
+    return text
+
+def process_prompt(prompt, tier="free", behavior=None):
+    domain = detect_domain(prompt)
+    tone = analyze_behavior(behavior or {})
+    prompt_lower = prompt.lower()
+
+    if domain == "system":
+        tool = generate_sys_monitor()
+        score_output(tool["filename"], clicked=True, time_on_page=15)
+        response = f"System tool created:\n\n{tool['description']}\n\n{tool['code']}"
+        return {"response": apply_tone_filter(response, tone)}
+
+    affiliate = match_affiliate_offer(prompt_lower)
+    if affiliate:
+        score_output(affiliate["title"], clicked=True)
+        response = f"Offer: {affiliate['title']}\n{affiliate['link']}"
+        return {"response": apply_tone_filter(response, tone)}
+
+    if any(x in prompt_lower for x in ["generate", "tool", "script"]):
+        tool = generate_tool(prompt)
+        score_output(tool["description"], time_on_page=10)
+        return {"response": apply_tone_filter(tool["description"], tone)}
+
+    if "product" in prompt_lower:
+        product = build_product(prompt)
+        score_output(product["title"], time_on_page=12)
+        return {"response": apply_tone_filter(product["description"], tone)}
+
+    response = "What would you like me to build or find for you today?"
+    return {"response": apply_tone_filter(response, tone)}
+
+def generate_tool(prompt):
+    return {
+        "description": f"Here's a tool based on your request: {prompt.title()}",
+        "code": f"# This is a starter script for: {prompt}",
+        "referral_link": "https://yourdomain.com/tool"
+    }
+
+def generate_sys_monitor():
+    return {
+        "filename": "syscheck.sh",
+        "code": """#!/bin/bash
+echo "Memory usage:"
+free -h
+echo "Disk usage:"
+df -h
+""",
+        "description": "This is a simple system monitor script that checks memory and disk usage."
+    }
+import uuid
+
+def build_product(prompt):
+    product_id = str(uuid.uuid4())[:8]
+    return {
+        "title": f"Custom Product: {prompt.title()}",
+        "description": f"I’ve created a unique product based on your request: '{prompt}'. You can customize it or sell it.",
+        "link": f"https://yourdomain.com/products/{product_id}",
+        "id": product_id
+    }
+import json
+
+with open("affiliate_offers.json", "r") as f:
+    OFFERS = json.load(f)
+
+def match_affiliate_offer(prompt):
+    prompt = prompt.lower()
+    for offer in OFFERS:
+        if any(k in prompt for k in offer.get("keywords", [])):
+            return {
+                "title": offer["title"],
+                "link": offer["url"],
+                "platform": offer.get("platform", "")
+            }
+    return None
+
+[
+  {
+    "title": "AI Side Hustle Blueprint",
+    "url": "https://yourclickbanklink.com",
+    "keywords": ["ai", "side hustle", "automation"],
+    "platform": "ClickBank"
+  },
+  {
+    "title": "Focus & Discipline Toolkit",
+    "url": "https://yourwarriorpluslink.com",
+    "keywords": ["focus", "discipline", "routine"],
+    "platform": "WarriorPlus"
+  },
+  {
+    "title": "Financial Freedom Guide",
+    "url": "https://yourdigistorelink.com",
+    "keywords": ["money", "finance", "wealth"],
+    "platform": "Digistore24"
+  }
+]
+
+import json
+from datetime import datetime
+
+LOG_FILE = "performance_log.json"
+
+def score_output(item_id, clicked=False, converted=False, time_on_page=0):
+    score = 0
+    if clicked:
+        score += 1
+    if converted:
+        score += 3
+    if time_on_page >= 10:
+        score += 1
+
+    log_entry = {
+        "item_id": item_id,
+        "timestamp": datetime.utcnow().isoformat(),
+        "clicked": clicked,
+        "converted": converted,
+        "time_on_page": time_on_page,
+        "score": score
+    }
+
+    try:
+        with open(LOG_FILE, "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = []
+
+    data.append(log_entry)
+
+    with open(LOG_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+# ✅ ADD THIS TO THE END to auto-create the blank file
+def initialize_log():
+    try:
+        with open(LOG_FILE, "x") as f:
+            json.dump([], f)
+    except FileExistsError:
+        pass
+
+initialize_log()
+
+{
+  "track_behavior": true,
+  "log_user_sessions": true,
+  "allow_voice_input": false,
+  "allow_camera_input": false,
+  "track_energy_usage": true,
+  "enable_token_rewards": true,
+  "secure_mode": true
+}
+import json
+
+with open("security_config.json", "r") as f:
+    config = json.load(f)
+
+if config.get("track_behavior"):
+    # Do behavior logging
+{
+  "persona": {
+    "style": "natural",
+    "tone": "helpful, human, confident",
+    "filter_keywords": [
+      "affiliate",
+      "referral",
+      "token reward",
+      "monetization",
+      "engine",
+      "clone",
+      "routing block",
+      "srb",
+      "arbitrage"
+    ],
+    "blocked_phrases": [
+      "powered by",
+      "this link earns",
+      "referral bonus",
+      "affiliate commission",
+      "system logic"
+    ]
+  },
+  "output_behavior": {
+    "speak_naturally": true,
+    "avoid_technical_terms": true,
+    "never_expose_system": true,
+    "never_mention_monetization": true,
+    "always_sound_human": true,
+    "always_prioritize_clarity": true
+  },
+  "enforcement": {
+    "strict": true,
+    "override_output": true,
+    "log_violations": false
+  }
+}
